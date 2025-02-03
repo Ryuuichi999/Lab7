@@ -1,0 +1,69 @@
+/* Base styles */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+/* Layout container */
+#container {
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+}
+
+/* Info panel styles */
+#info-panel {
+    flex: 0 0 25%;
+    padding: 10px;
+    box-sizing: border-box;
+    border-right: 1px solid #ccc;
+    background-color: #a3a2a2;
+    overflow-y: auto;
+}
+
+#info-panel h2 {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+}
+
+#info-panel p {
+    margin: 5px 0;
+}
+
+/* Map styles */
+#map {
+    height: 100vh;
+    width: 100%;
+    margin: 0;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    #container {
+        flex-direction: column;
+    }
+
+    #info-panel {
+        flex: 0 0 auto;
+        width: 100%;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid #ccc;
+    }
+
+    #map {
+        flex: 1;
+        height: calc(100vh - 150px); /* Adjust to account for info-panel height */
+    }
+}
+
+@media (max-width: 480px) {
+    #info-panel h2 {
+        font-size: 1rem;
+    }
+
+    #info-panel p {
+        font-size: 0.9rem;
+    }
+}
