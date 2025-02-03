@@ -32,14 +32,16 @@ var OpenTopoMap = L.tileLayer(
 osm.addTo(map);
 
 // Load layers from GeoServer WMS
-var wmsVillage = L.tileLayer.wms("http://localhost:8888/geoserver/CP373231/wms", {
-  layers: "CP373231:Village",
-  format: "image/png",
-  transparent: true,
-  version: "1.1.0",
-  attribution: "Village boundary data from GeoServer WMS",
-});
-
+var wmsAMPHOE = L.tileLayer.wms(
+  "http://localhost:8888/geoserver/CP373231/wms",
+  {
+    layers: "CP373231:AMPHOE",
+    format: "image/png",
+    transparent: true,
+    version: "1.1.0",
+    attribution: "AMPHOE boundary data from GeoServer WMS",
+  }
+);
 
 // Define base map layers
 var baseMaps = {
@@ -50,20 +52,16 @@ var baseMaps = {
 
 // Define overlay layers
 var overlayMaps = {
-  "Village Wms": wmsVillage,
-  
+  "AMPHOE Wms": wmsAMPHOE,
 };
 
 // Add layer control
 var layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
 
-// ดึงข้อมูล WFS GeoJSON ของตำบล
+// Function to load Tambon WFS
 function loadTambonWFS() {
-  // URL ของ WFS (ปรับตามที่อยู่ของ GeoServer คุณ)
-  const wfsUrl =
-    "http://localhost:8888/geoserver/CP373231/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=CP373231%3ATAMBON&maxFeatures=200&outputFormat=application%2Fjson";
+  const wfsUrl = "http://localhost:8888/geoserver/CP373231/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=CP373231%3ATAMBON&maxFeatures=200&outputFormat=application%2Fjson";
 
-  // ใช้ AJAX ดึงข้อมูลจาก WFS
   fetch(wfsUrl)
     .then((response) => {
       if (!response.ok) {
@@ -72,7 +70,6 @@ function loadTambonWFS() {
       return response.json();
     })
     .then((geojsonData) => {
-      // เพิ่ม GeoJSON ลงในแผนที่
       const tambonLayer = L.geoJSON(geojsonData, {
         style: function (feature) {
           return {
@@ -82,7 +79,6 @@ function loadTambonWFS() {
           };
         },
         onEachFeature: function (feature, layer) {
-          // เพิ่ม Popups แสดงข้อมูลตำบล
           if (feature.properties && feature.properties.TAM_NAMT) {
             layer.bindPopup(
               `<b>รหัสตำบล:</b> ${feature.properties.TAM_CODE}<br>` +
@@ -92,10 +88,7 @@ function loadTambonWFS() {
         },
       });
 
-      // เพิ่มชั้นข้อมูลตำบลลงในแผนที่
       tambonLayer.addTo(map);
-
-      // เพิ่มตัวเลือกใน Layer Control
       layerControl.addOverlay(tambonLayer, "Tambon Wfs");
     })
     .catch((error) => {
@@ -103,8 +96,79 @@ function loadTambonWFS() {
     });
 }
 
-// เรียกฟังก์ชันโหลดตำบล
+// Function to load Village WFS
+function loadVillageWFS() {
+  const wfsUrl = "http://localhost:8888/geoserver/CP373231/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=CP373231%3AVillage&maxFeatures=50&outputFormat=application%2Fjson";
+
+  fetch(wfsUrl)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("เกิดข้อผิดพลาดในการโหลดข้อมูล WFS");
+      }
+      return response.json();
+    })
+    .then((geojsonData) => {
+      const villageLayer = L.geoJSON(geojsonData, {
+        style: function (feature) {
+          return {
+            color: "blue", // สีเส้นขอบ
+            weight: 2, // ความหนาเส้น
+            fillOpacity: 0.2, // ความโปร่งใส
+          };
+        },
+        onEachFeature: function (feature, layer) {
+          if (feature.properties && feature.properties.VILL_CODE) {
+            layer.bindPopup(
+              `<b>หมู่ที่:</b> ${feature.properties.VILL_CODE}` 
+             
+            );
+          }
+        },
+      });
+
+      villageLayer.addTo(map);
+      layerControl.addOverlay(villageLayer, "Village Wfs");
+    })
+    .catch((error) => {
+      console.error("เกิดข้อผิดพลาด:", error);
+    });
+}
+
+// Function to load Village Point WFS
+function loadVillagePointWFS() {
+  const wfsUrl = "http://localhost:8888/geoserver/CP373231/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=CP373231%3AVillage_name_wgs84&maxFeatures=50&outputFormat=application%2Fjson";
+
+  fetch(wfsUrl)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("เกิดข้อผิดพลาดในการโหลดข้อมูล WFS");
+      }
+      return response.json();
+    })
+    .then((geojsonData) => {
+      const villagePointLayer = L.geoJSON(geojsonData, {
+        onEachFeature: function (feature, layer) {
+          if (feature.properties && feature.properties.VILL_NM_T) {
+            layer.bindPopup(
+              `<b>รหัสหมู่บ้าน:</b> ${feature.properties.VILL_IDN}<br>` +
+              `<b>หมู่บ้าน:</b> ${feature.properties.VILL_NM_T}`
+            );
+          }
+        },
+      });
+
+      villagePointLayer.addTo(map);
+      layerControl.addOverlay(villagePointLayer, "Village Points Wfs");
+    })
+    .catch((error) => {
+      console.error("เกิดข้อผิดพลาด:", error);
+    });
+}
+
+// เรียกฟังก์ชันเพื่อโหลดข้อมูลทั้งหมด
 loadTambonWFS();
+loadVillageWFS();
+loadVillagePointWFS();
 
 
 // Add mini map
@@ -120,7 +184,6 @@ var miniMap = new L.Control.MiniMap(
   }
 ).addTo(map);
 
-
 // แสดงพิกัดเมื่อเอาเมาส์ไปวางบนแผนที่
 map.on("mousemove", (e) => {
   document.getElementById("lat").textContent = e.latlng.lat.toFixed(6);
@@ -131,7 +194,6 @@ map.on("mousemove", (e) => {
 map.on("zoomend", () => {
   document.getElementById("zoom-level").textContent = map.getZoom();
 });
-
 
 // Show coordinates when mouse hovers over map
 var kk_amphoe = new L.GeoJSON.AJAX("/data/kk_amphoe.geojson", {
@@ -184,7 +246,11 @@ kk_tambon.addTo(map);
 var mk_village_pt = new L.GeoJSON.AJAX("/data/mk_village_pt.geojson", {
   onEachFeature: (feature, layer) => {
     if (feature.properties && feature.properties.VILL_NM_T) {
-      const popupContent = "หมู่บ้าน: " + feature.properties.VILL_NM_T+"<br>ชื่อภาษาอังกฤษ : " + feature.properties.VILL_NM_E;
+      const popupContent =
+        "หมู่บ้าน: " +
+        feature.properties.VILL_NM_T +
+        "<br>ชื่อภาษาอังกฤษ : " +
+        feature.properties.VILL_NM_E;
 
       layer.on("mouseover", (e) => {
         layer.bindPopup(popupContent).openPopup(e.latlng);
@@ -324,7 +390,13 @@ document
     );
   });
 
-  var mea= L.control.polylineMeasure({ position: 'topleft',  unit: 'kilometres',  showClearControl: 'true'}).addTo(map);
+var mea = L.control
+  .polylineMeasure({
+    position: "topleft",
+    unit: "kilometres",
+    showClearControl: "true",
+  })
+  .addTo(map);
 
 // Fetch temperature using OpenWeatherMap API
 var amphoeTemperatureLayer = null;
